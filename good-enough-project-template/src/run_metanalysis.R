@@ -1,6 +1,6 @@
 # Program Information  ----------------------------------------------------
 
-# Program:      run_metaanalysis
+# Program:      run_metanalysis
 # Author:       Sophie Bots
 # Description:  meta-analyse aggregated scri output data
 # Requirements:
@@ -22,34 +22,49 @@ library(meta)
 
 all_results <- read.csv("../data/temp/results_per_dap.csv")
 
-# remove row names column
-all_results <- all_results %>%
-  select(-X)
+# check if reading the CSV has worked correctly and fix if it hasn't
+# this can go wrong if the CSV format doesn't match the read.csv settings
+if (ncol(all_results) == 1) {
+  print("Warning: data file only has 1 row, code will attempt different read.csv() option to solve")
+  all_results <- read.csv2("../data/temp/results_per_dap.csv")
+  if (ncol(all_results) == 1) {
+    stop("Data issue remains: troubleshoot required before continuing")
+  }
+  }
 
-## NEEDS FIXING ##
-# pretending it's from different locations so I can write template code for that
-bifap_data <- all_results
-pharmo_data <- all_results
-ars_data <- all_results
-cprd_data <- all_results
+## Format data ---------------------------------------------------------
+#-- code needed for dummy data to create datasets from different sources 
+dlab <- c("BIFAP", "PHARMO", "ARS", "CPRD")
+dap_sets <- vector(mode = "list", length = length(dlab))
+names(dap_sets) <- dlab
 
-# Format Data -------------------------------------------------------------
+# create dlab variable for each subset and save
+for (i in 1:length(dlab)) {
+  subset <- all_results %>%
+    select(-X) %>%
+    mutate(dlab = dlab[i])
+  
+  dap_sets[[i]] <- subset
+}
 
-# adding variable that denotes source dataset (dlab)
-bifap_data <- bifap_data %>%
-  mutate(dlab = "BIFAP")
+# add all subsets together to make one set with all results
+scri_data <- data.frame()
+for (i in 1:length(dlab)) {
+  scri_data <- rbind(scri_data, dap_sets[[i]])
+}
 
-pharmo_data <- pharmo_data %>%
-  mutate(dlab = "PHARMO")
-
-ars_data <- ars_data %>%
-  mutate(dlab = "ARS")
-
-cprd_data <- cprd_data %>%
-  mutate(dlab = "CPRD")
-
-# add separate data source tables together into one frame
-scri_data <- rbind(bifap_data, pharmo_data, ars_data, cprd_data)
+## CURRENTLY WORKING ON THIS - NOT YET OPERATIONAL #
+# check if data are in correct formats
+# numvars <- c("irr", "lci", "uci", "sei", "yi")
+# for (i in 1:length(numvars)) {
+#   if(is.numeric(scri_data[, numvars[[i]]]) == FALSE) {
+#     print(c(numvars[[i]], "Warning: not numeric, will attempt fix"))
+#     scri_data[, numvars[[i]]] <- as.numeric(as.character(scri_data[, numvars[[i]]]))
+#   }
+#   if(abs(max(scri_data[, numvars[[i]]])) > 10) {
+#      print(c(numvars[[i]],"Warning: max value larger than 10"))
+#   }
+# }
 
 # Running the meta-analysis -----------------------------------------------
 # meta-analysis should be done:
