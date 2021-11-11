@@ -112,7 +112,6 @@ write.csv(tab1[["Myocarditis"]],
 write.csv(tab1[["Pericarditis"]],
           file = "../results/output/pericarditis_table.csv")
 
-# output tables as csv or something else, depends on how anDREa platform works
 
 ## FOREST PLOTS --------------------------------------------------------------------
 # placeholder now -- needs to be updated to actual data and functions
