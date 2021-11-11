@@ -3,21 +3,22 @@
 # Program:      run_metaanalysis
 # Author:       Sophie Bots
 # Description:  meta-analyse aggregated scri output data
-# Requirements: 
+# Requirements:
 #               input:  data in csv with 1 row per analysis stratum
 #               output: table 1, table 2, figures
 
 # Housekeeping  -----------------------------------------------------------
 
-## install and load packages 
+## install and load packages
 library(tidyverse)
 library(meta)
 
 # Import Data -------------------------------------------------------------
 # need to confirm folder structure on the anDREa platform
-# I also imagine each DAP uploads their CSV separately, so I will need to mix and match a bit
-# I can write a suggestion, but I have no clue if this is how it'll work so probably
-# will need to adapt when the actual data are there
+# I also imagine each DAP uploads their CSV separately
+# so I will need to mix and match a bit.
+# I can write a suggestion, but I have no clue if this is how
+# it'll work so probably will need to adapt when the actual data are there
 
 all_results <- read.csv("../data/temp/results_per_dap.csv")
 
@@ -26,8 +27,6 @@ all_results <- all_results %>%
   select(-X)
 
 ## NEEDS FIXING ##
-# because CSV output acts weirdly on my local machine, just copied the all_results that was in my R environment
-# but this really needs to be fixed after we decided on updating output code
 # pretending it's from different locations so I can write template code for that
 bifap_data <- all_results
 pharmo_data <- all_results
@@ -36,7 +35,7 @@ cprd_data <- all_results
 
 # Format Data -------------------------------------------------------------
 
-# adding dlab variable
+# adding variable that denotes source dataset (dlab)
 bifap_data <- bifap_data %>%
   mutate(dlab = "BIFAP")
 
@@ -49,7 +48,7 @@ ars_data <- ars_data %>%
 cprd_data <- cprd_data %>%
   mutate(dlab = "CPRD")
 
-# add all together
+# add separate data source tables together into one frame
 scri_data <- rbind(bifap_data, pharmo_data, ars_data, cprd_data)
 
 # Running the meta-analysis -----------------------------------------------
@@ -65,7 +64,6 @@ scri_data <- rbind(bifap_data, pharmo_data, ars_data, cprd_data)
 
 # write function so it's easy to change settings without having to copy-paste code
 create_tab1 <- function(adjustment, riskwindow, outcome) {
-  
   meta_analysis <- metagen(data = scri_data %>% filter(analysis == adjustment & label == riskwindow &
                                                     eventtype == outcome),
                            TE = yi, seTE = sei, studlab = dlab,
@@ -81,15 +79,12 @@ outcomes <- c("Myocarditis", "Pericarditis")
 tab1 <- vector(mode = "list", length = length(outcomes))
 names(tab1) <- outcomes
 
-
-for (i in 1:length(outcomes)) {
-  
+for (i in 1:seq_len(outcomes)) {
   # Run analysis
   u_dose1 <- create_tab1(adjustment = "unadjusted", riskwindow = "dose 1 risk window", outcome = outcomes[i])
   u_dose2 <- create_tab1(adjustment = "unadjusted", riskwindow = "dose 2 risk window", outcome = outcomes[i])
   a_dose1 <- create_tab1(adjustment = "adjusted", riskwindow = "dose 1 risk window", outcome = outcomes[i])
   a_dose2 <- create_tab1(adjustment = "adjusted", riskwindow = "dose 2 risk window", outcome = outcomes[i])
-  
   # make the table
   tab <- data.frame(
     vacc = u_dose1$bylevs,
@@ -99,13 +94,12 @@ for (i in 1:length(outcomes)) {
     irr_2 = exp(u_dose2$TE.random.w),
     lci_2 = exp(u_dose2$lower.random.w),
     uci_2 = exp(u_dose2$upper.random.w))
-    
+
   # save table
   tab1[[i]] <- tab
-  
-}
+  }
 
-# save tables
+# save tables to folder
 write.csv(tab1[["Myocarditis"]],
           file = "../results/output/myocarditis_table.csv")
 
@@ -115,6 +109,7 @@ write.csv(tab1[["Pericarditis"]],
 
 ## FOREST PLOTS --------------------------------------------------------------------
 # placeholder now -- needs to be updated to actual data and functions
+# this is example code and it does not yet work
 
 
 # first turn data into required format for plotting function
@@ -134,5 +129,3 @@ forest.meta(meta_analysis2,
             just.addcols = "left")
 
 # Sensitivity Analyses ----------------------------------------------------
-
-
