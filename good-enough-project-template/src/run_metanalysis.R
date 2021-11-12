@@ -105,12 +105,13 @@ tab1 <- vector(mode = "list", length = length(outcomes))
 names(tab1) <- outcomes
 
 for (i in 1:length(outcomes)) {
-  
+  # run analyses
   u_dose1 <- create_tab1(adjustment = "unadjusted", riskwindow = "dose 1 risk window", outcome = outcomes[i])
   u_dose2 <- create_tab1(adjustment = "unadjusted", riskwindow = "dose 2 risk window", outcome = outcomes[i])
   a_dose1 <- create_tab1(adjustment = "adjusted", riskwindow = "dose 1 risk window", outcome = outcomes[i])
   a_dose2 <- create_tab1(adjustment = "adjusted", riskwindow = "dose 2 risk window", outcome = outcomes[i])
-
+  
+  # create table
   tab <- data.frame(
     vacc = u_dose1$bylevs,
     irr_1 = exp(u_dose1$TE.random.w),
@@ -119,7 +120,8 @@ for (i in 1:length(outcomes)) {
     irr_2 = exp(u_dose2$TE.random.w),
     lci_2 = exp(u_dose2$lower.random.w),
     uci_2 = exp(u_dose2$upper.random.w))
-
+  
+  # save in vector
   tab1[[i]] <- tab
   }
 
