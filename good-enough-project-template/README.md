@@ -7,9 +7,9 @@ The code is not yet final and thus contains many work in progress parts.
 
 ## Requirements
 - R; project was run using version 4.0.3
-- packages: 'tidyverse', 'meta', 'docstring'
-- package versions: 'tidyverse 1.3.1', 'meta 5.0.1', 'docstring 1.0.0'
-Note that the code does not (yet) install these packages automatically, so users have to manually install them if they haven't done so before. This can be done using 'install.packages'
+- packages: `tidyverse`, `meta`, `docstring`
+- package versions: `tidyverse 1.3.1`, `meta 5.0.1`, `docstring 1.0.0`
+Note that the code does not (yet) install these packages automatically, so users have to manually install them if they haven't done so before. This can be done using `install.packages`
 
 ## Project organization
 - PG = project-generated
