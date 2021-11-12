@@ -5,3 +5,6 @@
 /data/temp
 /data/processed
 /data/raw
+
+# exclude .Rhistory files from source control by default
+/src/.Rhistory

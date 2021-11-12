@@ -1,4 +1,14 @@
-# [PROJECT NAME]
+# Self-controlled risk interval (SCRI) meta-analysis
+
+## Project description
+This project meta-analysis SCRI output from several local data access providers (DAPs), creating tabular and figure output.
+The code runs on dummy data, which is provided in data/temp.
+The code is not yet final and thus contains many work in progress parts.
+
+## Requirements
+R
+packages: tidyverse, meta, docstring
+Note that the code does not (yet) install these packages automatically, so users have to manually install them if they haven't done so before
 
 ## Project organization
 - PG = project-generated

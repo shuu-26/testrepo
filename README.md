@@ -1,6 +1,5 @@
 # testrepo
 Repository for reproducible code course
 
-I am adding some text offline
-
-I am adding some text on GitHub
+Code and dummy data for a meta-analysis project can be found in the good-enough-project-template folder.
+Changes have been made on the master branch.
