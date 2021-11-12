@@ -2,7 +2,7 @@
 
 # Program:      run_metanalysis
 # Author:       Sophie Bots
-# Description:  meta-analyse aggregated scri output data
+# Description:  meta-analyse aggregated SCRI output data
 # Requirements:
 #               input:  data in csv with 1 row per analysis stratum
 #               output: table 1, table 2, figures
@@ -12,18 +12,21 @@
 ## install and load packages
 library(tidyverse)
 library(meta)
+library(docstring)
 
 # Import Data -------------------------------------------------------------
-# need to confirm folder structure on the anDREa platform
-# I also imagine each DAP uploads their CSV separately
-# so I will need to mix and match a bit.
-# I can write a suggestion, but I have no clue if this is how
-# it'll work so probably will need to adapt when the actual data are there
-
+# Note to self: this is based on current GitHub structure
+# needs to be updated to anDREa structure when actual data are available
 all_results <- read.csv("../data/temp/results_per_dap.csv")
 
-# check if reading the CSV has worked correctly and fix if it hasn't
-# this can go wrong if the CSV format doesn't match the read.csv settings
+#- Data format check -#
+# Input files may be structured as comma or semicolon separated, which use
+# read.csv() and read.csv2() respectively.
+# Mismatching these results in a dataset with only 1 row, which cannot be used
+# This code checks whether that happens and fixes it if it does.
+# If the fix doesn't work, it stops the code and output a meaningful error,
+# so the user can start troubleshooting immediately.
+
 if (ncol(all_results) == 1) {
   print("Warning: data file only has 1 row, code will attempt different read.csv() option to solve")
   all_results <- read.csv2("../data/temp/results_per_dap.csv")
@@ -33,12 +36,17 @@ if (ncol(all_results) == 1) {
   }
 
 ## Format data ---------------------------------------------------------
-#-- code needed for dummy data to create datasets from different sources 
+# Note to self: this is only required for current dummy data.
+# needs to be updated based on structure of actual results data
+
+# The dummy data does not contain the data label column needed for meta-analysis
+# This code creates that column (dlab) for each DAP subset
+# before combining subsets into the analysis dataset scri_data
+# The number of DAPs can easily be adjusted by changing the dlab variable
 dlab <- c("BIFAP", "PHARMO", "ARS", "CPRD")
 dap_sets <- vector(mode = "list", length = length(dlab))
 names(dap_sets) <- dlab
 
-# create dlab variable for each subset and save
 for (i in 1:length(dlab)) {
   subset <- all_results %>%
     select(-X) %>%
@@ -47,7 +55,6 @@ for (i in 1:length(dlab)) {
   dap_sets[[i]] <- subset
 }
 
-# add all subsets together to make one set with all results
 scri_data <- data.frame()
 for (i in 1:length(dlab)) {
   scri_data <- rbind(scri_data, dap_sets[[i]])
@@ -67,18 +74,18 @@ for (i in 1:length(dlab)) {
 # }
 
 # Running the meta-analysis -----------------------------------------------
-# meta-analysis should be done:
-# (a) for each main analysis subtype
-# (b) for each sensitivity analysis subtype
-# for both: meta-analyse across DAPs separately for each
-# - vaccine type
-# - risk window
-# - adjustment type (unadjusted / adjusted for seasonality)
 
-## TABLE 1 ------------------------------------------------
-
-# write function so it's easy to change settings without having to copy-paste code
+# Creating Table 1 
 create_tab1 <- function(adjustment, riskwindow, outcome) {
+  #' @title Create Table 1 
+  #' @description This function takes the merged SCRI output data
+  #' from the different Data Access Providers (DAPs) and applies
+  #' random effects meta-analysis. It returns a meta object with the
+  #' meta-analysis results
+  #' @param adjustment The model type (adjusted or unadjusted)
+  #' @param riskwindow The risk window under evaluation (dose 1 or dose 2)
+  #' @param outcome The outcome under evaluation (myocarditis, pericarditis, or first of either)
+  #' @return A meta object with the meta-analysis results
   meta_analysis <- metagen(data = scri_data %>% filter(analysis == adjustment & label == riskwindow &
                                                     eventtype == outcome),
                            TE = yi, seTE = sei, studlab = dlab,
@@ -88,19 +95,22 @@ create_tab1 <- function(adjustment, riskwindow, outcome) {
   return(meta_analysis)
 }
 
-# loop over the different outcomes
-# this can also easily be adjusted to accommodate more outcomes
+# Table 1 requires results per outcome, so the code loops over those
+# to create a results table per outcome in the vector tab1
+# The table contains unadjusted and adjusted results for each risk window
+# and is saved per outcome as a csv output file
+# Number of outcomes can be adapted by changing the outcomes variable
 outcomes <- c("Myocarditis", "Pericarditis")
 tab1 <- vector(mode = "list", length = length(outcomes))
 names(tab1) <- outcomes
 
-for (i in 1:seq_len(outcomes)) {
-  # Run analysis
+for (i in 1:length(outcomes)) {
+  
   u_dose1 <- create_tab1(adjustment = "unadjusted", riskwindow = "dose 1 risk window", outcome = outcomes[i])
   u_dose2 <- create_tab1(adjustment = "unadjusted", riskwindow = "dose 2 risk window", outcome = outcomes[i])
   a_dose1 <- create_tab1(adjustment = "adjusted", riskwindow = "dose 1 risk window", outcome = outcomes[i])
   a_dose2 <- create_tab1(adjustment = "adjusted", riskwindow = "dose 2 risk window", outcome = outcomes[i])
-  # make the table
+
   tab <- data.frame(
     vacc = u_dose1$bylevs,
     irr_1 = exp(u_dose1$TE.random.w),
@@ -110,11 +120,10 @@ for (i in 1:seq_len(outcomes)) {
     lci_2 = exp(u_dose2$lower.random.w),
     uci_2 = exp(u_dose2$upper.random.w))
 
-  # save table
   tab1[[i]] <- tab
   }
 
-# save tables to folder
+# Note to self: file specification should be updated for real analyses
 write.csv(tab1[["Myocarditis"]],
           file = "../results/output/myocarditis_table.csv")
 
