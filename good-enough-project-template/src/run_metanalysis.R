@@ -18,11 +18,18 @@ library(stringi)
 # Updated to output of step_12_2 that Svetlana finalised
 # path probably needs adjusting to anDREa environment, but function should work
 
-# CPRD
+
 # load in datasets and turn them into more easily manageable names
+# CPRD
 load("//soliscom.uu.nl/users/3911195/My Documents/GitHub/CVM/g_output/scri/scri/CPRD_scri_models_A.RData")
 load("//soliscom.uu.nl/users/3911195/My Documents/GitHub/CVM/g_output/scri/scri/CPRD_scri_models_A_age.RData")
 load("//soliscom.uu.nl/users/3911195/My Documents/GitHub/CVM/g_output/scri/scri/CPRD_scri_models_A_sex_age.RData")
+
+# ARS
+load("//soliscom.uu.nl/users/3911195/My Documents/GitHub/CVM/g_output/scri/scri/ARS_scri_models_A.RData")
+load("//soliscom.uu.nl/users/3911195/My Documents/GitHub/CVM/g_output/scri/scri/ARS_scri_models_A_age.RData")
+load("//soliscom.uu.nl/users/3911195/My Documents/GitHub/CVM/g_output/scri/scri/ARS_scri_models_A_sex_age.RData")
+
 
 
 # so the datasets are structured per DAP, vaccine type, and stratum
@@ -34,7 +41,8 @@ load("//soliscom.uu.nl/users/3911195/My Documents/GitHub/CVM/g_output/scri/scri/
 # and store each cleaned dataset in a list called type_sets
 
 # loop will include all sets specified in 'names', so make sure this is complete
-names <- c("CPRD_scri_models_A", "CPRD_scri_models_A_age", "CPRD_scri_models_A_sex_age")
+names <- c("CPRD_scri_models_A", "CPRD_scri_models_A_age", "CPRD_scri_models_A_sex_age",
+           "ARS_scri_models_A", "ARS_scri_models_A_age", "ARS_scri_models_A_sex_age")
 type_sets <- vector(mode = "list", length = length(names))
 names(type_sets) <- names
 
@@ -91,6 +99,9 @@ scri_data <- scri_data %>%
             .funs = ~ ifelse(is.na(.), 1, .)) %>%
   mutate_at(.vars = vars(yi, sei),
             .funs = ~ ifelse(is.na(.), 0, .)) %>%
+  # censor numbers < 5 but this breaks metagen so THINK ABOUT THIS
+  # mutate_at(.vars = vars(n_events, atrisk_persons),
+  #           .funs = ~ ifelse(. < 5, "<5", .)) %>%
   # create a risk window label that is understandable and a variable for adjustment and outcome
   # because these are needed for the create_tab1 function in meta-analysis
   mutate(label = factor(vd, levels = c(1,2,3,4,5,6,7),
@@ -146,7 +157,6 @@ create_tab1 <- function(adjustment = "unadjusted",
 
 # take strata levels from the 'stratum' variable in the scri_data (so it is adapted if more strata become available)
 strata <- unique(scri_data$stratum)
-vaccine <- unique(scri_data$vacctype)
 
 tab_strata <- vector(mode = "list", length = length(strata))
 names(tab_strata) <- strata
@@ -154,8 +164,8 @@ names(tab_strata) <- strata
 for (i in 1:length(strata)) {
   
   # run analyses
-  u_dose1 <- create_tab1(riskwindow = "dose 1 risk window")
-  u_dose2 <- create_tab1(riskwindow = "dose 2 risk window")
+  u_dose1 <- create_tab1(riskwindow = "dose 1 risk window", stratum = strata[i])
+  u_dose2 <- create_tab1(riskwindow = "dose 2 risk window", stratum = strata[i])
   
   # create table
   tab <- data.frame(
@@ -196,10 +206,10 @@ plot_data <- scri_data %>%
 
 
 # creating the set for the forest plot (in this case CPRD only, all risk windows, per vaccine)
-plot_set <- metagen(data = plot_data %>% filter(subgroup == "all"),
+plot_set <- metagen(data = plot_data %>% filter(dap == "ARS" & vacctype == "AstraZeneca" & subgroup != "all"),
                     TE = yi, seTE = sei, studlab = label, sm ="IRR",
                     lower = lci, upper = uci, random=F, fixed=F,
-                    subgroup = vacctype,
+                    subgroup = subgroup,
                     n.c = atrisk_persons, n.e = n_events,
                     label.e = "myoperi", label.c = "N",
                     label.left = "lower risk", label.right = "higher risk")
