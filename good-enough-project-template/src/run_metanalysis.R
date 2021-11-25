@@ -12,82 +12,65 @@
 ## install and load packages
 library(tidyverse)
 library(meta)
+library(stringi)
 
 # Import and Format Data-------------------------------------------------------------
 # Updated to output of step_12_2 that Svetlana finalised
 # path probably needs adjusting to anDREa environment, but function should work
-# the R object name does not contain DAP name, so cannot load them all in one
-# load each one separately and give it a name
-load("//soliscom.uu.nl/users/3911195/My Documents/GitHub/CVM/g_output/scri/scri/scri_models_A.RData")
-CPRD <- scri_models_A
 
-# added this to test code but needs to be updated after data actually become available!
-# ARS <- scri_models_A
-# BIFAP <- scri_models_A
-# PHARMO <- scri_models_A
+# CPRD
+# load in datasets and turn them into more easily manageable names
+load("//soliscom.uu.nl/users/3911195/My Documents/GitHub/CVM/g_output/scri/scri/CPRD_scri_models_A.RData")
+load("//soliscom.uu.nl/users/3911195/My Documents/GitHub/CVM/g_output/scri/scri/CPRD_scri_models_A_age.RData")
+load("//soliscom.uu.nl/users/3911195/My Documents/GitHub/CVM/g_output/scri/scri/CPRD_scri_models_A_sex_age.RData")
 
-# We need a dataset with all information from the DAPs together because meta-analysis will be across DAPs
-# to do this without creating confusion, we need to add variables that denote the source DAP and vaccine type per DAP dataset
-# so per DAP (as denoted in dlab), we create a dataset with all analysis output plus 2 variables namely 
-# 'DAP' to denote source and 'vacctype' to denote vaccine type
-# we then select only the models with all exposure windows (called "buf_betwmodel_A_all_with_day0")
-# and create a dataframe containing all these model outcomes, which we format a little bit (e.g. update variable names etc.)
-# the result of the loop is the object dap_sets, a list with a properly formatted dataset for each DAP
 
-# set-up; can be adapted by changing 'dlab'
-dlab <- c("CPRD", "ARS", "BIFAP", "PHARMO")
-dap_sets <- vector(mode = "list", length = length(dlab))
-names(dap_sets) <- dlab
+# so the datasets are structured per DAP, vaccine type, and stratum
+# stratified analyses all have their own set with the strata in the name
+# DAP name is given in the list name (e.g. CPRD_, ARS_, etc.)
+# vaccine type is given in the sublist name (e.g. AstraZeneca, Pfizer, etc.)
+# as is stratum for stratified analyses (e.g. age(-18,30], etc.)
+# create loop for all datasets that extracts this information into columns (e.g. variables)
+# and store each cleaned dataset in a list called type_sets
 
-# start of the for-loop
-for (name in 1:length(dlab)) {
+# loop will include all sets specified in 'names', so make sure this is complete
+names <- c("CPRD_scri_models_A", "CPRD_scri_models_A_age", "CPRD_scri_models_A_sex_age")
+type_sets <- vector(mode = "list", length = length(names))
+names(type_sets) <- names
 
-  subset <- get(dlab[name])
+for (name in 1:length(names)) {
+  subset <- get(names[name])
+  
   for (i in 1:length(subset)) {
-    # add the dap name as a variable
+    # add the dap name, vaccine type and stratum as variables
+    # using regex based on
+    # name of dataset in case of dap
+    # name of subset name in case of vaccine type and stratum
+    # dap and vacctype both take first word (e.g. 'alpha') as value
+    # stratum takes text between _ and ] as value
     subset[[i]][["tab"]] <- subset[[i]][["tab"]] %>%
-      mutate(dap = dlab[name])
-    
-    # add variable with correct vaccine brand (using the if-statement)
-    if(grepl("Astra", names(subset)[[i]])) {
-      subset[[i]][["tab"]] <- subset[[i]][["tab"]] %>%
-        mutate(vacctype = "AstraZeneca")
-      }
-    
-    if(grepl("Pfizer", names(subset)[[i]])) {
-      subset[[i]][["tab"]] <- subset[[i]][["tab"]] %>%
-        mutate(vacctype = "Pfizer")
-    }
-    
-    if(grepl("Moderna", names(subset)[[i]])) {
-      subset[[i]][["tab"]] <- subset[[i]][["tab"]] %>%
-        mutate(vacctype = "Moderna")
-    }
-    
-    if(grepl("J&J", names(subset)[[i]])) {
-      subset[[i]][["tab"]] <- subset[[i]][["tab"]] %>%
-        mutate(vacctype = "J&J")
-    }
+      mutate(dap = stri_extract_first_regex(names[name], pattern = "[:alpha:]+"),
+             vacctype = stri_extract_first_regex(names(subset)[i], pattern = "[:alpha:]+"),
+             stratum = stri_extract_all_regex(names(subset)[i], pattern = "(?<=\\_).*\\]"))
   }
   
   # select only the complete information model and then only the "tab" entry of that
-  subset <- subset[which(grepl("buf_betwmodel", names(subset))==TRUE)]
+  subset <- subset[which(grepl("buf_betw", names(subset))==TRUE)]
   subset <- unlist(subset, recursive = F)
   subset <- subset[which(grepl(".tab", names(subset))==TRUE)]
   subset <- subset[which(grepl(".tab_", names(subset))==FALSE)]
   
   # combine the vaccine subsets into one dap set
-  dap_set <- bind_rows(subset) %>%
-    select(-c(all_cat2)) 
+  type_set <- bind_rows(subset)
   
-  # and then save the set in the dap_sets list
-  dap_sets[[name]] <- dap_set
-  }
-
+  # and then save the set in the type_sets list
+  type_sets[[name]] <- type_set
+}
+    
 # combine all dap subsets into one dataset
 scri_data <- data.frame()
-for (i in 1:length(dlab)) {
-  scri_data <- rbind(scri_data, dap_sets[[i]])
+for (i in 1:length(names)) {
+  scri_data <- rbind(scri_data, type_sets[[i]])
 }
 
 # variable names do not match with the meta-analysis code and we miss some variables
@@ -97,8 +80,8 @@ scri_data <- scri_data %>%
   # variable names with nonalpha characters are hard to read in R so change this
   rename(
     irr = RR,
-    lci = `2.5 %`,
-    uci = `97.5 %`,
+    lci = `2.5%`,
+    uci = `97.5%`,
     yi = coef,
     sei = `se(coef)`,
     pval = `Pr(>|z|)`) %>%
@@ -116,13 +99,20 @@ scri_data <- scri_data %>%
                                    "in between doses", "dose 2 day 0",
                                    "dose 2 risk window")),
          analysis = "unadjusted",
-         eventtype = "Myopericarditis")
-
+         eventtype = "Myopericarditis") %>%
+  # clean up the stratum variable so the levels are meaningful
+  mutate(stratum = ifelse(is.na(stratum), "all", stratum),
+         stratum = factor(stratum,
+                          levels = c("all", "age(-1,30]", "age(30,120]", "sex0_age(-1,30]", "sex0_age(30,120]",
+                                     "sex1_age(-1,30]", "sex1_age(30,120]"),
+                          labels = c("all", "age_under30", "age_30up", "women_under30", "women_30up", 
+                                     "men_under30",  "men_30up")),
+         subgroup = as.character(stratum))
 
 # Running the meta-analysis -----------------------------------------------
 
-# Creating Table 1 
-create_tab1 <- function(adjustment, riskwindow, outcome) {
+# Creating Table 1 function
+create_tab1 <- function(adjustment, riskwindow, outcome, stratum, vaccine) {
   #' @title Create Table 1 
   #' @description This function takes the merged SCRI output data
   #' from the different Data Access Providers (DAPs) and applies
@@ -133,7 +123,7 @@ create_tab1 <- function(adjustment, riskwindow, outcome) {
   #' @param outcome The outcome under evaluation (myocarditis, pericarditis, or first of either)
   #' @return A meta object with the meta-analysis results
   meta_analysis <- metagen(data = scri_data %>% filter(analysis == adjustment & label == riskwindow &
-                                                    eventtype == outcome),
+                                                    eventtype == outcome & subgroup == stratum, vacctype == vaccine),
                            TE = yi, seTE = sei, studlab = dap,
                            sm = "IRR", lower = lci, upper = uci,
                            random = T, fixed = F,
@@ -141,21 +131,24 @@ create_tab1 <- function(adjustment, riskwindow, outcome) {
   return(meta_analysis)
 }
 
-# Table 1 requires results per outcome, so the code loops over those
-# to create a results table per outcome in the vector tab1
-# The table contains unadjusted and adjusted results for each risk window
-# and is saved per outcome as a csv output file
-# Number of outcomes can be adapted by changing the outcomes variable
-outcomes <- c("Myopericarditis", "Myocarditis", "Pericarditis")
-tab1 <- vector(mode = "list", length = length(outcomes))
-names(tab1) <- outcomes
+# can create tables per many different things (outcomes, strata, adjustment models, risk windows)
+# for now we only have 1 outcome and 1 adjustment model
+# so let's loop over strata
 
-for (i in 1:length(outcomes)) {
+# take strata levels from the 'stratum' variable in the scri_data (so it is adapted if more strata become available)
+strata <- unique(scri_data$stratum)
+vaccine <- unique(scri_data$vacctype)
+
+tab_strata <- vector(mode = "list", length = length(strata))
+names(tab_strata) <- strata
+
+for (i in 1:length(strata)) {
+  
   # run analyses
-  u_dose1 <- create_tab1(adjustment = "unadjusted", riskwindow = "dose 1 risk window", outcome = outcomes[i])
-  u_dose2 <- create_tab1(adjustment = "unadjusted", riskwindow = "dose 2 risk window", outcome = outcomes[i])
-  # a_dose1 <- create_tab1(adjustment = "adjusted", riskwindow = "dose 1 risk window", outcome = outcomes[i])
-  # a_dose2 <- create_tab1(adjustment = "adjusted", riskwindow = "dose 2 risk window", outcome = outcomes[i])
+  u_dose1 <- create_tab1(adjustment = "unadjusted", riskwindow = "dose 1 risk window", outcome = "Myopericarditis",
+                         stratum = strata[i], vaccine = vaccine[2])
+  u_dose2 <- create_tab1(adjustment = "unadjusted", riskwindow = "dose 2 risk window", outcome = "Myopericarditis",
+                         stratum = strata[i])
   
   # create table
   tab <- data.frame(
@@ -165,21 +158,22 @@ for (i in 1:length(outcomes)) {
     uci_1 = exp(u_dose1$upper.random.w),
     irr_2 = exp(u_dose2$TE.random.w),
     lci_2 = exp(u_dose2$lower.random.w),
-    uci_2 = exp(u_dose2$upper.random.w))
+    uci_2 = exp(u_dose2$upper.random.w),
+    stratum = strata[i])
   
   # save in vector
-  tab1[[i]] <- tab
-  }
+  tab_strata[[i]] <- tab
+}
+
+# create one table with results for all strata together
+myoperi_strata <- bind_rows(tab_strata) %>%
+  mutate_at(.vars = vars(-c(vacc, stratum)),
+            .funs = ~round(., digits = 2))
 
 # Note to self: file specification should be updated for real analyses
-write.csv(tab1[["Myopericarditis"]],
-          file = "../results/output/myocarditis_table.csv")
-
-write.csv(tab1[["Myocarditis"]],
-          file = "../results/output/myocarditis_table.csv")
-
-write.csv(tab1[["Pericarditis"]],
-          file = "../results/output/pericarditis_table.csv")
+write.csv2(myoperi_strata,
+          file = "//soliscom.uu.nl/users/3911195/My Documents/GitHub/CVM/g_figure/Table_metanalysed_per_stratum.csv",
+          row.names = F)
 
 
 ## FOREST PLOTS --------------------------------------------------------------------
@@ -195,12 +189,12 @@ plot_data <- scri_data %>%
 
 
 # creating the set for the forest plot (in this case CPRD only, all risk windows, per vaccine)
-plot_set <- metagen(data = plot_data %>% filter(dap == "CPRD"),
+plot_set <- metagen(data = plot_data %>% filter(subgroup == "all"),
                     TE = yi, seTE = sei, studlab = label, sm ="IRR",
                     lower = lci, upper = uci, random=F, fixed=F,
                     subgroup = vacctype,
                     n.c = atrisk_persons, n.e = n_events,
-                    label.e = "events", label.c = "cases",
+                    label.e = "myoperi", label.c = "N",
                     label.left = "lower risk", label.right = "higher risk")
 
 
@@ -212,7 +206,8 @@ forest.meta(plot_set,
             pooled.times = F,
             pooled.totals = F,
             print.subgroup.name = F,
-            fs.heading = 10
+            fs.heading = 8,
+            xlim = c(0.5, 5)
             # print.tau2 = F,
             # leftcols = c("dap", "atrisk_persons", "n_events"),
             # leftlabs = c("Data source", "Cases", "Events"),
