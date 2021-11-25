@@ -60,7 +60,7 @@ for (name in 1:length(names)) {
   subset <- subset[which(grepl(".tab", names(subset))==TRUE)]
   subset <- subset[which(grepl(".tab_", names(subset))==FALSE)]
   
-  # combine the vaccine subsets into one dap set
+  # combine the vaccine subsets into one type set
   type_set <- bind_rows(subset)
   
   # and then save the set in the type_sets list
@@ -99,7 +99,7 @@ scri_data <- scri_data %>%
                                    "in between doses", "dose 2 day 0",
                                    "dose 2 risk window")),
          analysis = "unadjusted",
-         eventtype = "Myopericarditis") %>%
+         eventtype = "myopericarditis") %>%
   # clean up the stratum variable so the levels are meaningful
   mutate(stratum = ifelse(is.na(stratum), "all", stratum),
          stratum = factor(stratum,
@@ -112,24 +112,33 @@ scri_data <- scri_data %>%
 # Running the meta-analysis -----------------------------------------------
 
 # Creating Table 1 function
-create_tab1 <- function(adjustment, riskwindow, outcome, stratum, vaccine) {
+# please note that dataset is hardcoded in the function and is set to scri_data as created in the data formatting above
+create_tab1 <- function(adjustment = "unadjusted", 
+                        riskwindow, 
+                        outcome = "myopericarditis", 
+                        stratum = "all") {
   #' @title Create Table 1 
   #' @description This function takes the merged SCRI output data
   #' from the different Data Access Providers (DAPs) and applies
-  #' random effects meta-analysis. It returns a meta object with the
+  #' random effects meta-analysis stratified by vaccine brand. It returns a meta object with the
   #' meta-analysis results
-  #' @param adjustment The model type (adjusted or unadjusted)
+  #' @param adjustment The model type (adjusted or unadjusted); default set to unadjusted
   #' @param riskwindow The risk window under evaluation (dose 1 or dose 2)
-  #' @param outcome The outcome under evaluation (myocarditis, pericarditis, or first of either)
+  #' @param outcome The outcome under evaluation (myoperi, myo, or pericarditis); default set to myopericarditis
+  #' @param stratum The subgroup (stratum) under evaluation; default is all
   #' @return A meta object with the meta-analysis results
-  meta_analysis <- metagen(data = scri_data %>% filter(analysis == adjustment & label == riskwindow &
-                                                    eventtype == outcome & subgroup == stratum, vacctype == vaccine),
+  meta_analysis <- metagen(data = scri_data %>% filter(analysis == adjustment & 
+                                                         label == riskwindow &
+                                                         eventtype == outcome & 
+                                                         stratum == stratum),
                            TE = yi, seTE = sei, studlab = dap,
                            sm = "IRR", lower = lci, upper = uci,
                            random = T, fixed = F,
                            subgroup = vacctype)
   return(meta_analysis)
 }
+
+### NB SEEMS NOT TO PERFORM SELECTION ON STRATUM PROPERLY SO LOOK INTO THIS ###
 
 # can create tables per many different things (outcomes, strata, adjustment models, risk windows)
 # for now we only have 1 outcome and 1 adjustment model
@@ -145,10 +154,8 @@ names(tab_strata) <- strata
 for (i in 1:length(strata)) {
   
   # run analyses
-  u_dose1 <- create_tab1(adjustment = "unadjusted", riskwindow = "dose 1 risk window", outcome = "Myopericarditis",
-                         stratum = strata[i], vaccine = vaccine[2])
-  u_dose2 <- create_tab1(adjustment = "unadjusted", riskwindow = "dose 2 risk window", outcome = "Myopericarditis",
-                         stratum = strata[i])
+  u_dose1 <- create_tab1(riskwindow = "dose 1 risk window")
+  u_dose2 <- create_tab1(riskwindow = "dose 2 risk window")
   
   # create table
   tab <- data.frame(
