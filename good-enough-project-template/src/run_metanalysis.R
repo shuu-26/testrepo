@@ -59,7 +59,7 @@ for (name in 1:length(names)) {
     subset[[i]][["tab"]] <- subset[[i]][["tab"]] %>%
       mutate(dap = stri_extract_first_regex(names[name], pattern = "[:alpha:]+"),
              vacctype = stri_extract_first_regex(names(subset)[i], pattern = "[:alpha:]+"),
-             stratum = stri_extract_all_regex(names(subset)[i], pattern = "(?<=\\_).*\\]"))
+             stratum = stri_extract_all_regex(names(subset)[i], pattern = "(?<=\\_).*\\]", simplify = T))
   }
   
   # select only the complete information model and then only the "tab" entry of that
@@ -112,13 +112,12 @@ scri_data <- scri_data %>%
          analysis = "unadjusted",
          eventtype = "myopericarditis") %>%
   # clean up the stratum variable so the levels are meaningful
-  mutate(stratum = ifelse(is.na(stratum), "all", stratum),
-         stratum = factor(stratum,
+  mutate(subgroup = ifelse(is.na(stratum), "all", stratum),
+         subgroup = factor(subgroup,
                           levels = c("all", "age(-1,30]", "age(30,120]", "sex0_age(-1,30]", "sex0_age(30,120]",
                                      "sex1_age(-1,30]", "sex1_age(30,120]"),
                           labels = c("all", "age_under30", "age_30up", "women_under30", "women_30up", 
-                                     "men_under30",  "men_30up")),
-         subgroup = as.character(stratum))
+                                     "men_under30",  "men_30up")))
 
 # Running the meta-analysis -----------------------------------------------
 
@@ -127,7 +126,9 @@ scri_data <- scri_data %>%
 create_tab1 <- function(adjustment = "unadjusted", 
                         riskwindow, 
                         outcome = "myopericarditis", 
-                        stratum = "all") {
+                        data
+                        #subgroup
+                        ) {
   #' @title Create Table 1 
   #' @description This function takes the merged SCRI output data
   #' from the different Data Access Providers (DAPs) and applies
@@ -136,16 +137,18 @@ create_tab1 <- function(adjustment = "unadjusted",
   #' @param adjustment The model type (adjusted or unadjusted); default set to unadjusted
   #' @param riskwindow The risk window under evaluation (dose 1 or dose 2)
   #' @param outcome The outcome under evaluation (myoperi, myo, or pericarditis); default set to myopericarditis
-  #' @param stratum The subgroup (stratum) under evaluation; default is all
+  #' @param subgroup The subgroup (stratum) under evaluation; default is all
   #' @return A meta object with the meta-analysis results
-  meta_analysis <- metagen(data = scri_data %>% filter(analysis == adjustment & 
-                                                         label == riskwindow &
-                                                         eventtype == outcome & 
-                                                         stratum == stratum),
+
+  meta_analysis <- metagen(data = data %>% filter(analysis == adjustment &
+                                                  eventtype == outcome &
+                                                  label == riskwindow),
                            TE = yi, seTE = sei, studlab = dap,
                            sm = "IRR", lower = lci, upper = uci,
                            random = T, fixed = F,
-                           subgroup = vacctype)
+                           subgroup = vacctype,
+                          #subset = grepl(subgroup, subgroup),
+                           n.e = n_events, n.c = atrisk_persons)
   return(meta_analysis)
 }
 
@@ -155,42 +158,75 @@ create_tab1 <- function(adjustment = "unadjusted",
 # for now we only have 1 outcome and 1 adjustment model
 # so let's loop over strata
 
-# take strata levels from the 'stratum' variable in the scri_data (so it is adapted if more strata become available)
-strata <- unique(scri_data$stratum)
+data <- scri_data %>% filter(analysis == "unadjusted" & 
+                              label == "dose 1 risk window" &
+                              eventtype == "myopericarditis" & 
+                              subgroup == strata[i])
 
+
+# take strata levels from the 'stratum' variable in the scri_data (so it is adapted if more strata become available)
+strata <- c("all", "age_under30", "age_30up", "women_under30", "women_30up", 
+            "men_under30",  "men_30up")
 tab_strata <- vector(mode = "list", length = length(strata))
 names(tab_strata) <- strata
 
 for (i in 1:length(strata)) {
   
+  selection <- scri_data %>% filter(subgroup == strata[i])
+  
   # run analyses
-  u_dose1 <- create_tab1(riskwindow = "dose 1 risk window", stratum = strata[i])
-  u_dose2 <- create_tab1(riskwindow = "dose 2 risk window", stratum = strata[i])
+  u_dose1 <- create_tab1(data = selection, riskwindow = "dose 1 risk window")
+  u_dose2 <- create_tab1(data = selection, riskwindow = "dose 2 risk window")
   
   # create table
-  tab <- data.frame(
+  tab1 <- data.frame(
     vacc = u_dose1$bylevs,
     irr_1 = exp(u_dose1$TE.random.w),
     lci_1 = exp(u_dose1$lower.random.w),
     uci_1 = exp(u_dose1$upper.random.w),
+    stratum = strata[i],
+    N_persons = u_dose1$n.c.w,
+    N_events = u_dose1$n.e.w)
+  
+  tab2 <- data.frame(
+    vacc = u_dose2$bylevs,
     irr_2 = exp(u_dose2$TE.random.w),
     lci_2 = exp(u_dose2$lower.random.w),
     uci_2 = exp(u_dose2$upper.random.w),
-    stratum = strata[i])
+    stratum = strata[i],
+    N_persons = u_dose2$n.c.w,
+    N_events = u_dose2$n.e.w)
   
   # save in vector
-  tab_strata[[i]] <- tab
+  tab_strata[[i]][["dose1"]] <- tab1
+  tab_strata[[i]][["dose2"]] <- tab2
 }
 
 # create one table with results for all strata together
-myoperi_strata <- bind_rows(tab_strata) %>%
-  mutate_at(.vars = vars(-c(vacc, stratum)),
-            .funs = ~round(., digits = 2))
+# separate tables for dose1 and dose2 because they differ in column names
+myoperi_strata <- unlist(tab_strata, recursive = F)
+
+# round off the risk estimates and censor numbers < 5
+for (i in 1:length(myoperi_strata)) {
+  myoperi_strata[[i]] <- myoperi_strata[[i]] %>%
+    mutate_at(.vars = vars(-c(vacc, stratum, N_persons, N_events)),
+              .funs = ~round(., digits = 2)) %>%
+    mutate_at(.vars = vars(N_events, N_persons),
+              .funs = ~ifelse(. < 5, "< 5", as.character(.)))
+}
+
+myoperi_dose1 <- bind_rows(myoperi_strata[grepl("dose1", names(myoperi_strata))])
+myoperi_dose2 <- bind_rows(myoperi_strata[grepl("dose2", names(myoperi_strata))])
+
 
 # Note to self: file specification should be updated for real analyses
-write.csv2(myoperi_strata,
-          file = "//soliscom.uu.nl/users/3911195/My Documents/GitHub/CVM/g_figure/Table_metanalysed_per_stratum.csv",
+write.csv2(myoperi_dose1,
+          file = "//soliscom.uu.nl/users/3911195/My Documents/GitHub/CVM/g_figure/Table_metanalysed_per_stratum_dose1.csv",
           row.names = F)
+
+write.csv2(myoperi_dose2,
+           file = "//soliscom.uu.nl/users/3911195/My Documents/GitHub/CVM/g_figure/Table_metanalysed_per_stratum_dose2.csv",
+           row.names = F)
 
 
 ## FOREST PLOTS --------------------------------------------------------------------
