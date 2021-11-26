@@ -30,7 +30,9 @@ load("//soliscom.uu.nl/users/3911195/My Documents/GitHub/CVM/g_output/scri/scri/
 load("//soliscom.uu.nl/users/3911195/My Documents/GitHub/CVM/g_output/scri/scri/ARS_scri_models_A_age.RData")
 load("//soliscom.uu.nl/users/3911195/My Documents/GitHub/CVM/g_output/scri/scri/ARS_scri_models_A_sex_age.RData")
 
+# BIFAP
 
+# PHARMO
 
 # so the datasets are structured per DAP, vaccine type, and stratum
 # stratified analyses all have their own set with the strata in the name
@@ -117,17 +119,17 @@ scri_data <- scri_data %>%
                           levels = c("all", "age(-1,30]", "age(30,120]", "sex0_age(-1,30]", "sex0_age(30,120]",
                                      "sex1_age(-1,30]", "sex1_age(30,120]"),
                           labels = c("all", "age_under30", "age_30up", "women_under30", "women_30up", 
-                                     "men_under30",  "men_30up")))
+                                     "men_under30",  "men_30up"))) %>%
+  # relabel vacctype "J" to "J&J"
+  mutate(vacctype = ifelse(vacctype == "J", "J&J", vacctype))
 
 # Running the meta-analysis -----------------------------------------------
 
 # Creating Table 1 function
-# please note that dataset is hardcoded in the function and is set to scri_data as created in the data formatting above
 create_tab1 <- function(adjustment = "unadjusted", 
                         riskwindow, 
                         outcome = "myopericarditis", 
                         data
-                        #subgroup
                         ) {
   #' @title Create Table 1 
   #' @description This function takes the merged SCRI output data
@@ -137,7 +139,7 @@ create_tab1 <- function(adjustment = "unadjusted",
   #' @param adjustment The model type (adjusted or unadjusted); default set to unadjusted
   #' @param riskwindow The risk window under evaluation (dose 1 or dose 2)
   #' @param outcome The outcome under evaluation (myoperi, myo, or pericarditis); default set to myopericarditis
-  #' @param subgroup The subgroup (stratum) under evaluation; default is all
+  #' @param data The dataset that serves as input
   #' @return A meta object with the meta-analysis results
 
   meta_analysis <- metagen(data = data %>% filter(analysis == adjustment &
@@ -147,32 +149,26 @@ create_tab1 <- function(adjustment = "unadjusted",
                            sm = "IRR", lower = lci, upper = uci,
                            random = T, fixed = F,
                            subgroup = vacctype,
-                          #subset = grepl(subgroup, subgroup),
-                           n.e = n_events, n.c = atrisk_persons)
+                           n.e = n_events, n.c = atrisk_persons,
+                           label.e = "events", label.c = "N")
   return(meta_analysis)
 }
-
-### NB SEEMS NOT TO PERFORM SELECTION ON STRATUM PROPERLY SO LOOK INTO THIS ###
 
 # can create tables per many different things (outcomes, strata, adjustment models, risk windows)
 # for now we only have 1 outcome and 1 adjustment model
 # so let's loop over strata
-
-data <- scri_data %>% filter(analysis == "unadjusted" & 
-                              label == "dose 1 risk window" &
-                              eventtype == "myopericarditis" & 
-                              subgroup == strata[i])
-
-
-# take strata levels from the 'stratum' variable in the scri_data (so it is adapted if more strata become available)
 strata <- c("all", "age_under30", "age_30up", "women_under30", "women_30up", 
             "men_under30",  "men_30up")
 tab_strata <- vector(mode = "list", length = length(strata))
+tab_ma <- vector(mode = "list", length = length(strata))
 names(tab_strata) <- strata
+names(tab_ma) <- strata
 
 for (i in 1:length(strata)) {
   
-  selection <- scri_data %>% filter(subgroup == strata[i])
+  # select the correct stratum
+  data_noall <- scri_data %>% filter(vacctype != "all")
+  selection <- data_noall %>% filter(subgroup == strata[i])
   
   # run analyses
   u_dose1 <- create_tab1(data = selection, riskwindow = "dose 1 risk window")
@@ -197,6 +193,10 @@ for (i in 1:length(strata)) {
     N_persons = u_dose2$n.c.w,
     N_events = u_dose2$n.e.w)
   
+  # save meta-analyses in vector
+  tab_ma[[i]][["dose1"]] <- u_dose1
+  tab_ma[[i]][["dose2"]] <- u_dose2
+  
   # save in vector
   tab_strata[[i]][["dose1"]] <- tab1
   tab_strata[[i]][["dose2"]] <- tab2
@@ -215,6 +215,7 @@ for (i in 1:length(myoperi_strata)) {
               .funs = ~ifelse(. < 5, "< 5", as.character(.)))
 }
 
+# and extract the dose1 and dose2 tables
 myoperi_dose1 <- bind_rows(myoperi_strata[grepl("dose1", names(myoperi_strata))])
 myoperi_dose2 <- bind_rows(myoperi_strata[grepl("dose2", names(myoperi_strata))])
 
@@ -236,38 +237,86 @@ write.csv2(myoperi_dose2,
 # we want a plot that shows the number of cases and events
 # and we want to add some x-axis labels
 
-# remove the day0 rows because they mess up the plot
-plot_data <- scri_data %>%
-  filter(label != "dose 1 day 0" & label != "dose 2 day 0")
+create_plot <- function(subgroup,
+                        dose,
+                        data
+){
+  #' @title Create forest plots per subgroup and dose
+  #' @description This function takes the create_tab1 output data
+  #' It returns a forest plot
+  #' @param subgroup The subgroup of interest
+  #' @param dose The dose of interest
+  #' @param data The dataset, which should be a list of meta-analysis results
+  #' @return A forest plot
+  
+  plot <- forest.meta(data[[subgroup]][[dose]],
+              overall = F,
+              overall.hetstat = F,
+              test.subgroup = F,
+              label.left = "lower risk", label.right = "higher risk")
 
+}
 
-# creating the set for the forest plot (in this case CPRD only, all risk windows, per vaccine)
-plot_set <- metagen(data = plot_data %>% filter(dap == "ARS" & vacctype == "AstraZeneca" & subgroup != "all"),
-                    TE = yi, seTE = sei, studlab = label, sm ="IRR",
-                    lower = lci, upper = uci, random=F, fixed=F,
-                    subgroup = subgroup,
-                    n.c = atrisk_persons, n.e = n_events,
-                    label.e = "myoperi", label.c = "N",
-                    label.left = "lower risk", label.right = "higher risk")
+# somehow we cannot loop over plots because it doesn't generate objects
+# also cannot ggsave, annoying
+# saving as pdf with 6x8 inches seems to work
+# save each one by hand *sigh*
+# naming convention: Plot_subgroup_dose
 
+# whole population
+create_plot(subgroup = "all",
+            dose = "dose1",
+            data = tab_ma)
 
-# then plot
-forest.meta(plot_set,
-            #sortvar = TE,
-            smlab = "Incidence Rate Ratio",
-            pooled.events = F,
-            pooled.times = F,
-            pooled.totals = F,
-            print.subgroup.name = F,
-            fs.heading = 8,
-            xlim = c(0.5, 5)
-            # print.tau2 = F,
-            # leftcols = c("dap", "atrisk_persons", "n_events"),
-            # leftlabs = c("Data source", "Cases", "Events"),
-            # just.addcols = "left"
-            )
+create_plot(subgroup = "all",
+            dose = "dose2",
+            data = tab_ma)
 
+# under 30
+create_plot(subgroup = "age_under30",
+            dose = "dose1",
+            data = tab_ma)
 
+create_plot(subgroup = "age_under30",
+            dose = "dose2",
+            data = tab_ma)
+
+# over 30
+create_plot(subgroup = "age_30up",
+            dose = "dose1",
+            data = tab_ma)
+
+create_plot(subgroup = "age_under30",
+            dose = "dose2",
+            data = tab_ma)
+
+# women / age
+create_plot(subgroup = "women_under30",
+            dose = "dose1",
+            data = tab_ma)
+create_plot(subgroup = "women_under30",
+            dose = "dose2",
+            data = tab_ma)
+create_plot(subgroup = "women_30up",
+            dose = "dose1",
+            data = tab_ma)
+create_plot(subgroup = "women_30up",
+            dose = "dose2",
+            data = tab_ma)
+
+# men / age
+create_plot(subgroup = "men_under30",
+            dose = "dose1",
+            data = tab_ma)
+create_plot(subgroup = "men_under30",
+            dose = "dose2",
+            data = tab_ma)
+create_plot(subgroup = "men_30up",
+            dose = "dose1",
+            data = tab_ma)
+create_plot(subgroup = "men_30up",
+            dose = "dose2",
+            data = tab_ma)
 
 
 # Sensitivity Analyses ----------------------------------------------------
