@@ -20,7 +20,7 @@ library(stringi)
 setwd("Z://inbox/")
 
 # load in datasets and turn them into more easily manageable names
-# the datasets you need (version MAR2022) are:
+# the datasets you need (version 1.0.8) are:
 # (1) alldata_brands = stratified by brand only
 # (2) alldata_sex = stratified by brand & sex
 # (3) alldata_age30 = stratified by brand & age (<30/30+)
@@ -28,218 +28,95 @@ setwd("Z://inbox/")
 # (5) alldata_no_split = not stratified
 # (6) covidstart_no_split = excluding those with COVID-19 prior to control window (folder:no_covid_start_control_rw)
 
+## first do the ones without issues that can be looped over
+list_names <- c("brands", "sex", "age30", "sex_age30", "no_split")
+nocovid <- "no_covid_start_control_rw"
+load_list <- vector(mode="list", length = length(list_names))
+dapnames <- c("CPRD", "SIDIAP", "ARS", "BIFAP") # add PHARMO and BIFAP when they have uploaded new data
+nocovid_entry <- length(list_names) + 1
 
-# CPRD
-load("transfer-2022-03-24-04-42-pm/g_export/scri/all_data/CPRD_vax2prior_alldata_brands_report.RData")
-load("transfer-2022-03-24-04-42-pm/g_export/scri/all_data/CPRD_vax2prior_alldata_sex_report.RData")
-load("transfer-2022-03-24-04-42-pm/g_export/scri/all_data/CPRD_vax2prior_alldata_age30_report.RData")
-#load("transfer-2022-03-24-04-42-pm/g_export/scri/all_data/CPRD_vax2prior_alldata_age30_50_report.RData")
-load("transfer-2022-03-24-04-42-pm/g_export/scri/all_data/CPRD_vax2prior_alldata_sex_age30_report.RData")
-load("transfer-2022-03-24-04-42-pm/g_export/scri/all_data/CPRD_vax2prior_alldata_no_split_report.RData") 
-load("transfer-2022-03-24-04-42-pm/g_export/scri/no_covid_start_control_rw/CPRD_vax2prior_covidstart_no_split_report.RData")
-
-# ARS
-# now also has same issue as BIFAP; so load myocarditis first and then pericarditis
-load("transfer-2022-04-05-05-04-pm/g_export/scri_myocarditis/all_data/ARS_vax2prior_alldata_brands_report.RData")
-load("transfer-2022-04-05-05-04-pm/g_export/scri_myocarditis/all_data/ARS_vax2prior_alldata_sex_report.RData")
-load("transfer-2022-04-05-05-04-pm/g_export/scri_myocarditis/all_data/ARS_vax2prior_alldata_age30_report.RData")
-#load("transfer-2022-04-05-05-04-pm/g_export/scri_myocarditis/all_data/ARS_vax2prior_alldata_age30_50_report.RData")
-load("transfer-2022-04-05-05-04-pm/g_export/scri_myocarditis/all_data/ARS_vax2prior_alldata_sex_age30_report.RData")
-load("transfer-2022-04-05-05-04-pm/g_export/scri_myocarditis/all_data/ARS_vax2prior_alldata_no_split_report.RData")
-load("transfer-2022-04-05-05-04-pm/g_export/scri_myocarditis/no_covid_start_control_rw/ARS_vax2prior_covidstart_no_split_report.RData")
-
-ARSmyo_vax2prior_alldata_brands_report <- ARS_vax2prior_alldata_brands_report
-ARSmyo_vax2prior_alldata_sex_report <- ARS_vax2prior_alldata_sex_report
-ARSmyo_vax2prior_alldata_age30_report <- ARS_vax2prior_alldata_age30_report
-ARSmyo_vax2prior_alldata_sex_age30_report <- ARS_vax2prior_alldata_sex_age30_report
-ARSmyo_vax2prior_alldata_no_split_report <- ARS_vax2prior_alldata_no_split_report
-ARSmyo_vax2prior_covidstart_no_split_report <- ARS_vax2prior_covidstart_no_split_report
-
-# load peri
-load("transfer-2022-04-05-03-29-pm/g_export/scri_RR_only_peri/all_data/ARS_vax2prior_alldata_brands_report.RData")
-load("transfer-2022-04-05-03-29-pm/g_export/scri_RR_only_peri/all_data/ARS_vax2prior_alldata_sex_report.RData")
-load("transfer-2022-04-05-03-29-pm/g_export/scri_RR_only_peri/all_data/ARS_vax2prior_alldata_age30_report.RData")
-#load("transfer-2022-04-05-03-29-pm/g_export/scri_RR_only_peri/all_data/ARS_vax2prior_alldata_age30_50_report.RData")
-load("transfer-2022-04-05-03-29-pm/g_export/scri_RR_only_peri/all_data/ARS_vax2prior_alldata_sex_age30_report.RData")
-load("transfer-2022-04-05-03-29-pm/g_export/scri_RR_only_peri/all_data/ARS_vax2prior_alldata_no_split_report.RData")
-load("transfer-2022-04-05-03-29-pm/g_export/scri_RR_only_peri/no_covid_start_control_rw/ARS_vax2prior_covidstart_no_split_report.RData")
-
-# now replace the old myocarditis output with the correct new ones
-ARS_vax2prior_alldata_brands_report[[1]] <- ARSmyo_vax2prior_alldata_brands_report[[1]]
-ARS_vax2prior_alldata_brands_report[[2]] <- ARSmyo_vax2prior_alldata_brands_report[[2]]
-ARS_vax2prior_alldata_brands_report[[3]] <- ARSmyo_vax2prior_alldata_brands_report[[3]]
-
-ARS_vax2prior_covidstart_no_split_report[[1]] <- ARSmyo_vax2prior_covidstart_no_split_report[[1]]
-ARS_vax2prior_covidstart_no_split_report[[2]] <- ARSmyo_vax2prior_covidstart_no_split_report[[2]]
-ARS_vax2prior_covidstart_no_split_report[[3]] <- ARSmyo_vax2prior_covidstart_no_split_report[[3]]
-
-ARS_vax2prior_alldata_no_split_report[[1]] <- ARSmyo_vax2prior_alldata_no_split_report[[1]]
-ARS_vax2prior_alldata_no_split_report[[2]] <- ARSmyo_vax2prior_alldata_no_split_report[[2]]
-ARS_vax2prior_alldata_no_split_report[[3]] <- ARSmyo_vax2prior_alldata_no_split_report[[3]]
-
-ARS_vax2prior_alldata_sex_report[[1]] <- ARSmyo_vax2prior_alldata_sex_report[[1]]
-ARS_vax2prior_alldata_sex_report[[2]] <- ARSmyo_vax2prior_alldata_sex_report[[2]]
-ARS_vax2prior_alldata_sex_report[[3]] <- ARSmyo_vax2prior_alldata_sex_report[[3]]
-ARS_vax2prior_alldata_sex_report[[4]] <- ARSmyo_vax2prior_alldata_sex_report[[4]]
-ARS_vax2prior_alldata_sex_report[[5]] <- ARSmyo_vax2prior_alldata_sex_report[[5]]
-ARS_vax2prior_alldata_sex_report[[6]] <- ARSmyo_vax2prior_alldata_sex_report[[6]]
-
-ARS_vax2prior_alldata_age30_report[[1]] <- ARSmyo_vax2prior_alldata_age30_report[[1]]
-ARS_vax2prior_alldata_age30_report[[2]] <- ARSmyo_vax2prior_alldata_age30_report[[2]]
-ARS_vax2prior_alldata_age30_report[[3]] <- ARSmyo_vax2prior_alldata_age30_report[[3]]
-ARS_vax2prior_alldata_age30_report[[4]] <- ARSmyo_vax2prior_alldata_age30_report[[4]]
-ARS_vax2prior_alldata_age30_report[[5]] <- ARSmyo_vax2prior_alldata_age30_report[[5]]
-ARS_vax2prior_alldata_age30_report[[6]] <- ARSmyo_vax2prior_alldata_age30_report[[6]]
-
-ARS_vax2prior_alldata_sex_age30_report[[1]] <- ARSmyo_vax2prior_alldata_sex_age30_report[[1]]
-ARS_vax2prior_alldata_sex_age30_report[[2]] <- ARSmyo_vax2prior_alldata_sex_age30_report[[2]]
-ARS_vax2prior_alldata_sex_age30_report[[3]] <- ARSmyo_vax2prior_alldata_sex_age30_report[[3]]
-ARS_vax2prior_alldata_sex_age30_report[[4]] <- ARSmyo_vax2prior_alldata_sex_age30_report[[4]]
-ARS_vax2prior_alldata_sex_age30_report[[5]] <- ARSmyo_vax2prior_alldata_sex_age30_report[[5]]
-ARS_vax2prior_alldata_sex_age30_report[[6]] <- ARSmyo_vax2prior_alldata_sex_age30_report[[6]]
-
-remove(ARSmyo_vax2prior_alldata_age30_report, ARSmyo_vax2prior_alldata_brands_report, ARSmyo_vax2prior_alldata_sex_age30_report, ARSmyo_vax2prior_alldata_sex_report,
-       ARSmyo_vax2prior_alldata_no_split_report, ARSmyo_vax2prior_covidstart_no_split_report)
-
-# BIFAP_HOSP
-# for this version load two sets, because one misses pericarditis data
-# load the myocarditis one first (because same names so overwriting issue *sigh*)
-# don't have to do the no split for hospital subpopulation
-load("transfer-2022-03-28-12-49-pm/g_export_PC_HOSP/scri_only_myo_Pfizer/all_data/BIFAP_vax2prior_alldata_brands_report.RData")
-load("transfer-2022-03-28-12-49-pm/g_export_PC_HOSP/scri_only_myo_Pfizer/all_data/BIFAP_vax2prior_alldata_sex_report.RData")
-load("transfer-2022-03-28-12-49-pm/g_export_PC_HOSP/scri_only_myo_Pfizer/all_data/BIFAP_vax2prior_alldata_age30_report.RData")
-#load("BIFAP_PC_myocarditis/g_export_PC_HOSP/scri_only_myo_Pfizer/all_data/BIFAP_vax2prior_alldata_age30_50_report.RData")
-load("transfer-2022-03-28-12-49-pm/g_export_PC_HOSP/scri_only_myo_Pfizer/all_data/BIFAP_vax2prior_alldata_sex_age30_report.RData")
-
-BIFAPmyo_vax2prior_alldata_brands_report <- BIFAP_vax2prior_alldata_brands_report
-BIFAPmyo_vax2prior_alldata_sex_report <- BIFAP_vax2prior_alldata_sex_report
-BIFAPmyo_vax2prior_alldata_age30_report <- BIFAP_vax2prior_alldata_age30_report
-BIFAPmyo_vax2prior_alldata_sex_age30_report <- BIFAP_vax2prior_alldata_sex_age30_report
-
-load("transfer-2022-03-21-08-39-am/g_export_PC_HOSP/scri__peri_good__no_myo/all_data/BIFAP_vax2prior_alldata_brands_report.RData")
-load("transfer-2022-03-21-08-39-am/g_export_PC_HOSP/scri__peri_good__no_myo/all_data/BIFAP_vax2prior_alldata_sex_report.RData")
-load("transfer-2022-03-21-08-39-am/g_export_PC_HOSP/scri__peri_good__no_myo/all_data/BIFAP_vax2prior_alldata_age30_report.RData")
-#load("transfer-2022-03-21-08-39-am/g_export_PC_HOSP/scri__peri_good__no_myo/all_data/BIFAP_vax2prior_alldata_age30_50_report.RData")
-load("transfer-2022-03-21-08-39-am/g_export_PC_HOSP/scri__peri_good__no_myo/all_data/BIFAP_vax2prior_alldata_sex_age30_report.RData")
-
-# now replace the old myocarditis output with the correct new ones
-# assigning them to new names because otherwise BIFAP_PC will load over them
-BIFAPhosp_vax2prior_alldata_brands_report <- BIFAP_vax2prior_alldata_brands_report
-BIFAPhosp_vax2prior_alldata_brands_report[[1]] <- BIFAPmyo_vax2prior_alldata_brands_report[[1]]
-BIFAPhosp_vax2prior_alldata_brands_report[[2]] <- BIFAPmyo_vax2prior_alldata_brands_report[[2]]
-BIFAPhosp_vax2prior_alldata_brands_report[[3]] <- BIFAPmyo_vax2prior_alldata_brands_report[[3]]
-
-BIFAPhosp_vax2prior_alldata_sex_report <- BIFAP_vax2prior_alldata_sex_report
-BIFAPhosp_vax2prior_alldata_sex_report[[1]] <- BIFAPmyo_vax2prior_alldata_sex_report[[1]]
-BIFAPhosp_vax2prior_alldata_sex_report[[2]] <- BIFAPmyo_vax2prior_alldata_sex_report[[2]]
-BIFAPhosp_vax2prior_alldata_sex_report[[3]] <- BIFAPmyo_vax2prior_alldata_sex_report[[3]]
-BIFAPhosp_vax2prior_alldata_sex_report[[4]] <- BIFAPmyo_vax2prior_alldata_sex_report[[4]]
-BIFAPhosp_vax2prior_alldata_sex_report[[5]] <- BIFAPmyo_vax2prior_alldata_sex_report[[5]]
-BIFAPhosp_vax2prior_alldata_sex_report[[6]] <- BIFAPmyo_vax2prior_alldata_sex_report[[6]]
-
-BIFAPhosp_vax2prior_alldata_age30_report <- BIFAP_vax2prior_alldata_age30_report
-BIFAPhosp_vax2prior_alldata_age30_report[[1]] <- BIFAPmyo_vax2prior_alldata_age30_report[[1]]
-BIFAPhosp_vax2prior_alldata_age30_report[[2]] <- BIFAPmyo_vax2prior_alldata_age30_report[[2]]
-BIFAPhosp_vax2prior_alldata_age30_report[[3]] <- BIFAPmyo_vax2prior_alldata_age30_report[[3]]
-BIFAPhosp_vax2prior_alldata_age30_report[[4]] <- BIFAPmyo_vax2prior_alldata_age30_report[[4]]
-BIFAPhosp_vax2prior_alldata_age30_report[[5]] <- BIFAPmyo_vax2prior_alldata_age30_report[[5]]
-BIFAPhosp_vax2prior_alldata_age30_report[[6]] <- BIFAPmyo_vax2prior_alldata_age30_report[[6]]
-
-BIFAPhosp_vax2prior_alldata_sex_age30_report <- BIFAP_vax2prior_alldata_sex_age30_report
-BIFAPhosp_vax2prior_alldata_sex_age30_report[[1]] <- BIFAPmyo_vax2prior_alldata_sex_age30_report[[1]]
-BIFAPhosp_vax2prior_alldata_sex_age30_report[[2]] <- BIFAPmyo_vax2prior_alldata_sex_age30_report[[2]]
-BIFAPhosp_vax2prior_alldata_sex_age30_report[[3]] <- BIFAPmyo_vax2prior_alldata_sex_age30_report[[3]]
-BIFAPhosp_vax2prior_alldata_sex_age30_report[[4]] <- BIFAPmyo_vax2prior_alldata_sex_age30_report[[4]]
-BIFAPhosp_vax2prior_alldata_sex_age30_report[[5]] <- BIFAPmyo_vax2prior_alldata_sex_age30_report[[5]]
-BIFAPhosp_vax2prior_alldata_sex_age30_report[[6]] <- BIFAPmyo_vax2prior_alldata_sex_age30_report[[6]]
-
-remove(BIFAPmyo_vax2prior_alldata_age30_report, BIFAPmyo_vax2prior_alldata_brands_report, BIFAPmyo_vax2prior_alldata_sex_age30_report, BIFAPmyo_vax2prior_alldata_sex_report)
-
-# BIFAP
-# for this version load two sets, because one misses pericarditis data
-# load the myocarditis one first (because same names so overwriting issue *sigh*)
-load("transfer-2022-03-28-07-25-am/g_export_PC/scri/all_data_only_myo/BIFAP_vax2prior_alldata_brands_report.RData")
-load("transfer-2022-03-28-07-25-am/g_export_PC/scri/all_data_only_myo/BIFAP_vax2prior_alldata_sex_report.RData")
-load("transfer-2022-03-28-07-25-am/g_export_PC/scri/all_data_only_myo/BIFAP_vax2prior_alldata_age30_report.RData")
-#load("transfer-2022-03-28-07-25-am/g_export_PC/scri/all_data_only_myo/BIFAP_vax2prior_alldata_age30_50_report.RData")
-load("transfer-2022-03-28-07-25-am/g_export_PC/scri/all_data_only_myo/BIFAP_vax2prior_alldata_sex_age30_report.RData")
-load("transfer-2022-03-28-07-25-am/g_export_PC/scri/all_data_only_myo/BIFAP_vax2prior_alldata_no_split_report.RData")
-load("transfer-2022-03-28-07-25-am/g_export_PC/scri/no_covid_start_control_rw_only_myo/BIFAP_vax2prior_covidstart_no_split_report.RData")
-
-BIFAPmyo_vax2prior_alldata_brands_report <- BIFAP_vax2prior_alldata_brands_report
-BIFAPmyo_vax2prior_alldata_sex_report <- BIFAP_vax2prior_alldata_sex_report
-BIFAPmyo_vax2prior_alldata_age30_report <- BIFAP_vax2prior_alldata_age30_report
-BIFAPmyo_vax2prior_alldata_sex_age30_report <- BIFAP_vax2prior_alldata_sex_age30_report
-BIFAPmyo_vax2prior_alldata_no_split_report <- BIFAP_vax2prior_alldata_no_split_report
-BIFAPmyo_vax2prior_covidstart_no_split_report <- BIFAP_vax2prior_covidstart_no_split_report
-
-load("transfer-2022-03-21-08-55-am/g_export_PC/scri__peri_good__myo_withoutadjustment/all_data/BIFAP_vax2prior_alldata_brands_report.RData")
-load("transfer-2022-03-21-08-55-am/g_export_PC/scri__peri_good__myo_withoutadjustment/all_data/BIFAP_vax2prior_alldata_sex_report.RData")
-load("transfer-2022-03-21-08-55-am/g_export_PC/scri__peri_good__myo_withoutadjustment/all_data/BIFAP_vax2prior_alldata_age30_report.RData")
-#load("transfer-2022-03-21-08-55-am/g_export_PC/scri__peri_good__myo_withoutadjustment/all_data/BIFAP_vax2prior_alldata_age30_50_report.RData")
-load("transfer-2022-03-21-08-55-am/g_export_PC/scri__peri_good__myo_withoutadjustment/all_data/BIFAP_vax2prior_alldata_sex_age30_report.RData")
-load("transfer-2022-03-21-08-55-am/g_export_PC/scri__peri_good__myo_withoutadjustment/all_data/BIFAP_vax2prior_alldata_no_split_report.RData")
-load("transfer-2022-03-21-08-55-am/g_export_PC/scri__peri_good__myo_withoutadjustment/no_covid_start_control_rw/BIFAP_vax2prior_covidstart_no_split_report.RData")
-
-# now replace the old myocarditis output with the correct new ones
-BIFAP_vax2prior_alldata_brands_report[[1]] <- BIFAPmyo_vax2prior_alldata_brands_report[[1]]
-BIFAP_vax2prior_alldata_brands_report[[2]] <- BIFAPmyo_vax2prior_alldata_brands_report[[2]]
-BIFAP_vax2prior_alldata_brands_report[[3]] <- BIFAPmyo_vax2prior_alldata_brands_report[[3]]
-
-BIFAP_vax2prior_alldata_no_split_report[[1]] <- BIFAPmyo_vax2prior_alldata_no_split_report[[1]]
-BIFAP_vax2prior_alldata_no_split_report[[2]] <- BIFAPmyo_vax2prior_alldata_no_split_report[[2]]
-BIFAP_vax2prior_alldata_no_split_report[[3]] <- BIFAPmyo_vax2prior_alldata_no_split_report[[3]]
-
-BIFAP_vax2prior_covidstart_no_split_report[[1]] <- BIFAPmyo_vax2prior_covidstart_no_split_report[[1]]
-BIFAP_vax2prior_covidstart_no_split_report[[2]] <- BIFAPmyo_vax2prior_covidstart_no_split_report[[2]]
-BIFAP_vax2prior_covidstart_no_split_report[[3]] <- BIFAPmyo_vax2prior_covidstart_no_split_report[[3]]
-
-BIFAP_vax2prior_alldata_sex_report[[1]] <- BIFAPmyo_vax2prior_alldata_sex_report[[1]]
-BIFAP_vax2prior_alldata_sex_report[[2]] <- BIFAPmyo_vax2prior_alldata_sex_report[[2]]
-BIFAP_vax2prior_alldata_sex_report[[3]] <- BIFAPmyo_vax2prior_alldata_sex_report[[3]]
-BIFAP_vax2prior_alldata_sex_report[[4]] <- BIFAPmyo_vax2prior_alldata_sex_report[[4]]
-BIFAP_vax2prior_alldata_sex_report[[5]] <- BIFAPmyo_vax2prior_alldata_sex_report[[5]]
-BIFAP_vax2prior_alldata_sex_report[[6]] <- BIFAPmyo_vax2prior_alldata_sex_report[[6]]
-
-BIFAP_vax2prior_alldata_age30_report[[1]] <- BIFAPmyo_vax2prior_alldata_age30_report[[1]]
-BIFAP_vax2prior_alldata_age30_report[[2]] <- BIFAPmyo_vax2prior_alldata_age30_report[[2]]
-BIFAP_vax2prior_alldata_age30_report[[3]] <- BIFAPmyo_vax2prior_alldata_age30_report[[3]]
-BIFAP_vax2prior_alldata_age30_report[[4]] <- BIFAPmyo_vax2prior_alldata_age30_report[[4]]
-BIFAP_vax2prior_alldata_age30_report[[5]] <- BIFAPmyo_vax2prior_alldata_age30_report[[5]]
-BIFAP_vax2prior_alldata_age30_report[[6]] <- BIFAPmyo_vax2prior_alldata_age30_report[[6]]
-
-BIFAP_vax2prior_alldata_sex_age30_report[[1]] <- BIFAPmyo_vax2prior_alldata_sex_age30_report[[1]]
-BIFAP_vax2prior_alldata_sex_age30_report[[2]] <- BIFAPmyo_vax2prior_alldata_sex_age30_report[[2]]
-BIFAP_vax2prior_alldata_sex_age30_report[[3]] <- BIFAPmyo_vax2prior_alldata_sex_age30_report[[3]]
-BIFAP_vax2prior_alldata_sex_age30_report[[4]] <- BIFAPmyo_vax2prior_alldata_sex_age30_report[[4]]
-BIFAP_vax2prior_alldata_sex_age30_report[[5]] <- BIFAPmyo_vax2prior_alldata_sex_age30_report[[5]]
-BIFAP_vax2prior_alldata_sex_age30_report[[6]] <- BIFAPmyo_vax2prior_alldata_sex_age30_report[[6]]
-
-remove(BIFAPmyo_vax2prior_alldata_age30_report, BIFAPmyo_vax2prior_alldata_brands_report, BIFAPmyo_vax2prior_alldata_sex_age30_report, BIFAPmyo_vax2prior_alldata_sex_report,
-       BIFAPmyo_vax2prior_alldata_no_split_report, BIFAPmyo_vax2prior_covidstart_no_split_report)
-
-# PHARMO - does not stratify by outcome type
-# so do not meta-analyse but present separately
-load("transfer-2022-03-21-09-26-am/Results of 1.0.4_18032022/g_export/scri/all_data/PHARMO_vax2prior_alldata_brands_report.RData")
-load("transfer-2022-03-21-09-26-am/Results of 1.0.4_18032022/g_export/scri/all_data/PHARMO_vax2prior_alldata_sex_report.RData")
-load("transfer-2022-03-21-09-26-am/Results of 1.0.4_18032022/g_export/scri/all_data/PHARMO_vax2prior_alldata_age30_report.RData")
-#load("transfer-2022-03-21-09-26-am/Results of 1.0.4_18032022/g_export/scri/all_data/PHARMO_vax2prior_alldata_age30_50_report.RData")
-load("transfer-2022-03-21-09-26-am/Results of 1.0.4_18032022/g_export/scri/all_data/PHARMO_vax2prior_alldata_sex_age30_report.RData")
-load("transfer-2022-03-21-09-26-am/Results of 1.0.4_18032022/g_export/scri/all_data/PHARMO_vax2prior_alldata_no_split_report.RData")
-load("transfer-2022-03-21-09-26-am/Results of 1.0.4_18032022/g_export/scri/no_covid_start_control_rw/PHARMO_vax2prior_covidstart_no_split_report.RData")
-
-# SIDIAP
-load("transfer-2022-04-01-10-23-am/g_export/scri/all_data/SIDIAP_vax2prior_alldata_brands_report.RData")
-load("transfer-2022-04-01-10-23-am/g_export/scri/all_data/SIDIAP_vax2prior_alldata_sex_report.RData")
-load("transfer-2022-04-01-10-23-am/g_export/scri/all_data/SIDIAP_vax2prior_alldata_age30_report.RData")
-#load("transfer-2022-04-01-10-23-am/g_export/scri/all_data/PHARMO_vax2prior_alldata_age30_50_report.RData")
-load("transfer-2022-04-01-10-23-am/g_export/scri/all_data/SIDIAP_vax2prior_alldata_sex_age30_report.RData")
-load("transfer-2022-04-01-10-23-am/g_export/scri/all_data/SIDIAP_vax2prior_alldata_no_split_report.RData")
-load("transfer-2022-04-01-10-23-am/g_export/scri/no_covid_start_control_rw/SIDIAP_vax2prior_covidstart_no_split_report.RData")
-
+for (name in 1:length(dapnames)) {
+  if(dapnames[name] == "CPRD") {
+    inputfolder <- "transfer-2022-04-26-11-39-am"
+    
+    # make the list of file names
+    for (i in 1:length(list_names)) {
+      load_list[[i]] <- paste(inputfolder,"/g_export/scri/all_data/", dapnames[name], "_vax2prior_alldata_",list_names[i],"_report.RData", sep = "")
+      
+    }
+    load_list[[nocovid_entry]] <- paste(inputfolder,"/g_export/scri/", nocovid, "/", dapnames[name], "_vax2prior_covidstart_no_split_report.RData", sep = "")
+    
+    # load them in
+    for (i in 1:length(load_list)) {
+      load(load_list[[i]])
+    }
+    
+  }
+  else if(dapnames[name] == "PHARMO") {
+    inputfolder <- "transfer-2022-03-21-09-26-am/Results of 1.0.4_18032022"
+    
+    # make the list of file names
+    for (i in 1:length(list_names)) {
+      load_list[[i]] <- paste(inputfolder,"/g_export/scri/all_data/", dapnames[name], "_vax2prior_alldata_",list_names[i],"_report.RData", sep = "")
+      
+    }
+    load_list[[nocovid_entry]] <- paste(inputfolder,"/g_export/scri/", nocovid, "/", dapnames[name], "_vax2prior_covidstart_no_split_report.RData", sep = "")
+    
+    # load them in
+    for (i in 1:length(load_list)) {
+      load(load_list[[i]])
+    }
+    
+  }
+  else if(dapnames[name] == "SIDIAP"){
+    inputfolder <- "transfer-2022-04-26-11-17-am"
+    
+    # make the list of file names
+    for (i in 1:length(list_names)) {
+      load_list[[i]] <- paste(inputfolder,"/g_export/scri/all_data/", dapnames[name], "_vax2prior_alldata_",list_names[i],"_report.RData", sep = "")
+      
+    }
+    load_list[[nocovid_entry]] <- paste(inputfolder,"/g_export/scri/", nocovid, "/", dapnames[name], "_vax2prior_covidstart_no_split_report.RData", sep = "")
+    
+    # load them in
+    for (i in 1:length(load_list)) {
+      load(load_list[[i]])
+    }
+  }
+  else if(dapnames[name] == "ARS"){
+    inputfolder <- "transfer-2022-04-23-11-06-pm"
+    
+    # make the list of file names
+    for (i in 1:length(list_names)) {
+      load_list[[i]] <- paste(inputfolder,"/g_export/scri/all_data/", dapnames[name], "_vax2prior_alldata_",list_names[i],"_report.RData", sep = "")
+      
+    }
+    load_list[[nocovid_entry]] <- paste(inputfolder,"/g_export/scri/", nocovid, "/", dapnames[name], "_vax2prior_covidstart_no_split_report.RData", sep = "")
+    
+    # load them in
+    for (i in 1:length(load_list)) {
+      load(load_list[[i]])
+    }
+  }
+  else if(dapnames[name] == "BIFAP"){
+    inputfolder <- "transfer-2022-04-29-12-25-pm"
+    
+    # make the list of file names
+    for (i in 1:length(list_names)) {
+      load_list[[i]] <- paste(inputfolder,"/g_export_PC/scri/all_data/", dapnames[name], "_vax2prior_alldata_",list_names[i],"_report.RData", sep = "")
+      
+    }
+    load_list[[nocovid_entry]] <- paste(inputfolder,"/g_export_PC/scri/", nocovid, "/", dapnames[name], "_vax2prior_covidstart_no_split_report.RData", sep = "")
+    
+    # load them in
+    for (i in 1:length(load_list)) {
+      load(load_list[[i]])
+    }
+  }
+}
 
 # CREATE THE SCRI_DATA DATASET ---------------
-# MAR2022 update (v1.0.4)
+# MAR2022 update (v1.0.8)
 # Svetlana wrote new programme, so code needs to be updated too
 # main analysis is 28-day risk window and 30-day period time adjustment
 # 7-day risk window is sensitivity analysis
@@ -259,45 +136,56 @@ extract_information <- function(data,
   #' @return A dataset with the required information
   
   set <- data[grepl(riskwindow, names(data))]
-  
   subsets <- vector(mode = "list", length = length(set))
   
+  # need to build ifelse in to remove sensitivity analysis Svetlana added where she adjusts for all events and not only those in risk window
+  # recode those ("alltadj") to a NULL entry
   for (i in 1:length(set)) {
-    subset <- bind_rows(set[[i]][["all data"]][grepl(period, names(set[[i]][["all data"]]))])
-    subsets[[i]] <- subset
+    if(grepl("tadj", names(set)[[i]])==F) {
+      subset <- bind_rows(set[[i]][["all data"]][grepl(period, names(set[[i]][["all data"]]))])
+      subsets[[i]] <- subset
+    }
+    else if(grepl("subgrtadj", names(set)[[i]])==T) {
+      subset <- bind_rows(set[[i]][["all data"]][grepl(period, names(set[[i]][["all data"]]))])
+      subsets[[i]] <- subset
+    }
+
+    else if (grepl("alltadj", names(set)[[i]]) == T) {
+      subsets[[i]] <- NULL
+    }
   }
   
+  # bind_rows will ignore the NULL entries, so these are taken out
+  # also add distinct because now there are duplicates in the sets for some reason?
   set2 <- bind_rows(subsets) %>%
     mutate(dap = stri_extract_first_regex(names[name], pattern = "[:alpha:]+"),
            selection = stri_extract_first_regex(names[name], pattern = "(?<=vax2prior_).{7,10}(?=_(brands|sex|age30|no_split))"),
            stratum = stri_extract_last_regex(names[name], pattern = "(?<=_(alldata|covidstart|covid30d)_).*(?=_report)"),
-           analysis = ifelse(riskwindow == "2v_28", "main", "sensitivity"),
-           caltime_adjustment = period) %>%
-    select(-c(contains("cum_ev"), model))
+           analysis = ifelse(grepl("2v_28", riskwindow)==T, "main", "sensitivity"),
+           caltime_adjustment = ifelse(grepl("30d", period)==T, "30d", period)) %>%
+    select(-c(contains("cum_ev"), model)) %>%
+    distinct()
   
   return(set2)
 
 }
 
-# run it for all datasets
-names <- c("CPRD_vax2prior_alldata_brands_report", "CPRD_vax2prior_alldata_sex_report", 
-           "CPRD_vax2prior_alldata_age30_report", "CPRD_vax2prior_alldata_sex_age30_report",
-           "ARS_vax2prior_alldata_brands_report", "ARS_vax2prior_alldata_sex_report", 
-           "ARS_vax2prior_alldata_age30_report", "ARS_vax2prior_alldata_sex_age30_report",
-           "BIFAP_vax2prior_alldata_brands_report", "BIFAP_vax2prior_alldata_sex_report", 
-           "BIFAP_vax2prior_alldata_age30_report", "BIFAP_vax2prior_alldata_sex_age30_report",
-           "PHARMO_vax2prior_alldata_brands_report", "PHARMO_vax2prior_alldata_sex_report", 
-           "PHARMO_vax2prior_alldata_age30_report", "PHARMO_vax2prior_alldata_sex_age30_report",
-           "PHARMO_vax2prior_alldata_no_split_report", "CPRD_vax2prior_alldata_no_split_report",
-           "ARS_vax2prior_alldata_no_split_report", "BIFAP_vax2prior_alldata_no_split_report",
-           "BIFAPhosp_vax2prior_alldata_brands_report", "BIFAPhosp_vax2prior_alldata_sex_report", 
-           "BIFAPhosp_vax2prior_alldata_age30_report", "BIFAPhosp_vax2prior_alldata_sex_age30_report",
-           "CPRD_vax2prior_covidstart_no_split_report", "ARS_vax2prior_covidstart_no_split_report",
-           "BIFAP_vax2prior_covidstart_no_split_report", "PHARMO_vax2prior_covidstart_no_split_report",
-           "SIDIAP_vax2prior_alldata_brands_report", "SIDIAP_vax2prior_alldata_sex_report", 
-           "SIDIAP_vax2prior_alldata_age30_report", "SIDIAP_vax2prior_alldata_sex_age30_report",
-           "SIDIAP_vax2prior_alldata_no_split_report","SIDIAP_vax2prior_covidstart_no_split_report")
+# create list of all the datasets you want to include in the main dataset
+dap_datasets <- unlist(stri_extract_last_regex(load_list, "(?<=[:upper:])_.*(?=\\.RData)"))
+dapnames <- c("CPRD", "SIDIAP", "ARS", "BIFAP") # add PHARMO when they are ready
+list_names <- vector(mode = "list", length = length(dapnames))
+names(list_names) <- dapnames
 
+for (name in 1:length(dapnames)) {
+  for (i in 1:length(dap_datasets)) {
+    list_names[[name]][[i]] <- paste(dapnames[name], dap_datasets[i], sep="")
+  }
+}
+names <- unlist(list_names)
+# remove the BIFAPhosp you don't use
+names <- names[which(names != "BIFAPhosp_vax2prior_alldata_no_split_report" & names != "BIFAPhosp_vax2prior_covidstart_no_split_report")]
+
+# run the extract_information for all sets you want to include
 main_sets <- vector(mode = "list", length = length(names))
 sensitivity_sets <- vector(mode = "list", length = length(names))
 main_noadj_sets <- vector(mode = "list", length = length(names))
@@ -308,15 +196,15 @@ names(main_noadj_sets) <- names
 # run the function
 for (name in 1:length(names)) {
   main_sets[[name]] <- extract_information(data = get(names[name]),
-                                           riskwindow = "2v_28",
-                                           period = "30d")
-  
+                                           riskwindow = "2v_28d_obsperc_0",
+                                           period = "30d_start-234d")
+  print(names[name])
   sensitivity_sets[[name]] <- extract_information(data = get(names[name]),
-                                                  riskwindow = "2v_7",
-                                                  period = "30d")
-  
+                                                  riskwindow = "2v_7d_obsperc_0",
+                                                  period = "30d_start-234d")
+
   main_noadj_sets[[name]] <- extract_information(data = get(names[name]),
-                                            riskwindow = "2v_28",
+                                            riskwindow = "2v_28d_obsperc_0",
                                             period = "no_adj")
 }
 
@@ -378,7 +266,6 @@ scri_data <- analysis_set %>%
          riskwindow = stri_extract_first_regex(all_cat, pattern = "(?<=(Astra|Pfize|J&J|Moder)).*"),
          riskwindow = ifelse(grepl(c("-29;-1|0;0|1;28|1;7|8;14|15;28|-90;-30"), riskwindow) == TRUE,
                              trimws(riskwindow), NA),
-         riskwindow = ifelse(riskwindow == "dose 2 pre-exposure[-90;-30]", NA, riskwindow),
          riskwindow = recode(riskwindow,
                              "buffer[-29;-1]" = "pre-exposure period",
                              "dose 1 [0;0]" = "dose 1 day 0",
@@ -386,12 +273,14 @@ scri_data <- analysis_set %>%
                              "dose 1 [1;7]" = "dose 1 day 1-7",
                              "dose 1 [8;14]" = "dose 1 day 8-14",
                              "dose 1 [15;28]" = "dose 1 day 15-28",
-                             "dose 1 pre-exposure[-90;-30]" = "control window",
+                             "dose 1 pre-exposure[-90;-30]" = "dose 1 control window",
+                             "dose 2 pre-exposure[-90;-30]" = "dose 2 control window",
                              "dose 2 [0;0]" = "dose 2 day 0",
                              "dose 2 [1;28]" = "dose 2 day 1-28",
                              "dose 2 [1;7]" = "dose 2 day 1-7",
                              "dose 2 [8;14]" = "dose 2 day 8-14",
-                             "dose 2 [15;28]" = "dose 2 day 15-28"))
+                             "dose 2 [15;28]" = "dose 2 day 15-28")) %>%
+  distinct()
 
 # RUNNING THE META-ANALYSIS -----------------------------------------------
 
@@ -401,27 +290,37 @@ scri_data <- analysis_set %>%
 ma_input <- scri_data %>%
   filter(grepl("no", all_cat) == F) %>%
   filter(grepl("dose", riskwindow) == T) %>%
-  filter(grepl("0", riskwindow) == F) %>%
+  filter(grepl("0|control", riskwindow) == F) %>%
   filter(dap != "BIFAP-hosp (Spain)") %>%
   filter(caltime_adjustment == "30d") %>%
   mutate(analysis_stratum = str_c(sex, agegroup, riskwindow, sep="_"))
 
-# checking some numbers
-ntest <- ma_input %>%
-  filter(analysis == "main") %>%
-  filter(grepl("Men_under|Women_under|Men_over|Women_over", analysis_stratum)==F) %>%
-  group_by(dap, event, analysis_stratum) %>%
-  summarise(n = sum(atrisk_ids),
-            n_exposede = sum(n_events))
+## for Table 4 you need the number of cases in each control window and risk window
+# make a table of this
+controlw_cases <- scri_data %>%
+  filter(grepl("control window", riskwindow) == T) %>%
+  filter(caltime_adjustment == "30d" & analysis == "main" & selection == "alldata") %>%
+  filter(dap != "BIFAP-hosp (Spain)") %>%
+  mutate(analysis_stratum = str_c(sex, agegroup, riskwindow, sep="_")) %>%
+  group_by(event, vacctype, analysis_stratum) %>%
+  summarise(ntot_contr = sum(atrisk_ids), unexp_cases = sum(n_events)) %>%
+  mutate(analysis_stratum = trimws(gsub(x = analysis_stratum, pattern = "control window", replacement = "")))
+
+# also make a table of the number of cases in each risk window
+riskw_cases <- ma_input %>%
+  filter(caltime_adjustment == "30d" & analysis == "main" & selection == "alldata") %>%
+  group_by(event, vacctype, analysis_stratum) %>%
+  summarise(ntot_rw = sum(atrisk_ids), exp_cases = sum(n_events)) %>%
+  arrange(event, vacctype, analysis_stratum) %>%
+  mutate(analysis_stratum = trimws(gsub(x = analysis_stratum, pattern = "day 1-28", replacement = "")))
 
 
-ntest2 <- ma_input %>%
-  filter(analysis == "main") %>%
-  filter(grepl("Men_under|Women_under|Men_over|Women_over", analysis_stratum)==F) %>%
-  group_by(event, analysis_stratum, vacctype) %>%
-  summarise(n = sum(atrisk_ids),
-            n_exposed = sum(n_events))
+# combine the tables
+table_cases <- controlw_cases %>%
+  full_join(riskw_cases, by=c("event", "vacctype", "analysis_stratum"))
 
+
+## Now do the actual meta-analysis
 # Function that performs the meta-analysis
 perform_ma <- function(data, 
                         outcome, 
@@ -582,11 +481,14 @@ myoperi_table <- create_table (data = myoperi_output,
 #           row.names = F)
 # 
 # write.csv(peri_table,
-#            file = "Z:/inbox/scri/output/20220406_pericarditis 28d meta-analysis per stratum.csv",
+#            file = "Z:/inbox/scri/output/20220429_pericarditis 28d meta-analysis per stratum.csv",
 #            row.names = F)
 # 
 # write.csv(myoperi_table,
 #           file = "Z:/inbox/scri/output/20220406_myopericarditis 28d meta-analysis per stratum.csv",
+#           row.names = F)
+# write.csv(table_cases,
+#           file = "Z:/inbox/scri/output/20220414_table with numbers of unexposed and exposed cases per stratum.csv",
 #           row.names = F)
 
 # (2) SENSITIVITY ANALYSIS USING 7-DAY RISK WINDOW INSTEAD OF 28-DAY ---------------
@@ -800,7 +702,7 @@ create_plot <- function(data,
 pdf(file = "Z:/inbox/scri/output/20220404_Forestplot_myo_28d_dose2.pdf", width = 9, height = 9)
 create_plot(
   data = myo_models,
-  subgroup = 1
+  subgroup = 3
 )
 dev.off()
 
@@ -808,20 +710,16 @@ pdf(file = "Z:/inbox/scri/output/20220401_Forestplot_peri_28d_dose2.pdf", width 
 # peri
 create_plot(
   data = peri_models,
-  subgroup = 2
+  subgroup = 11
 )
 dev.off()
 
-# saving as pdf with 9x9 inches seems to work
-# save each one by hand *sigh*
-# naming convention: Plot_subgroup_dose
+# check the 7-day plots
 
-# whole population
-# pdf(file = "Z:/inbox/scri/output/20211213_Plot_all_dose1_with_N.pdf", width = 9, height = 9)
-# create_plot(subgroup = "all",
-#             dose = "dose1",
-#             data = tab_ma)
-# dev.off()
+create_plot(
+  data = myo_models2,
+  subgroup = 3
+)
 
 # RESPONSE TO REVIEWER ADDITIONAL ANALYSES -----------------------
 
