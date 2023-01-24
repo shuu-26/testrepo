@@ -113,8 +113,8 @@ df_population <- df_incidentgout %>%
   mutate(excl = ifelse(year(date_entry) != year_of_birth & fu_1y == 0, 1, 0)) %>%
   filter(excl == 0) %>%
   mutate(
-    study_entry_date = max(as.Date("2020-09-01"), as.Date(date_entry)),
-    study_exit_date = min(as.Date(date_death), as.Date(date_exit)),
+    study_entry_date = max(as.Date("2020-09-01"), as.Date(date_entry), na.rm = T),
+    study_exit_date = min(as.Date(date_death), as.Date(date_exit), na.rm = T),
     age_at_study_entry = 2020 - year_of_birth,
     DAP = "CPRD") %>%
   distinct() %>%
@@ -125,4 +125,5 @@ df_population <- df_incidentgout %>%
 
 # save the dataset
 write.csv(df_population,
-          file = "F:/Projects/EMA-tender/CVM/Gout/20220510_Gout analysis population file.csv")
+          file = "F:/Projects/EMA-tender/CVM/Gout/20220511_Gout analysis population file.csv",
+          row.names = F)

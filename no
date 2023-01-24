@@ -1,0 +1,95 @@
+[33mcommit 42ae16b04c0dc15ff602e30d3084315db9c29f38[m[33m ([m[1;36mHEAD -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m)[m
+Author: Sophie Bots <s.h.bots@uu.nl>
+Date:   Fri Nov 26 12:06:32 2021 +0100
+
+    Added plotting, not optimal but works for now
+
+[33mcommit ad2e5759e640d821a52d5a5f0f6c5abaa53866cd[m
+Author: Sophie Bots <s.h.bots@uu.nl>
+Date:   Fri Nov 26 09:59:27 2021 +0100
+
+    Fixed meta-analysis table part, it now properly selects strata
+
+[33mcommit e407465639f8794784d9005515afd85a6153b68a[m
+Author: Sophie Bots <s.h.bots@uu.nl>
+Date:   Thu Nov 25 21:59:34 2021 +0100
+
+    adding ARS load-in to code and testing plots on ARS data
+
+[33mcommit b70b8b4cd43f5b8f0e38f5a8602f17e1adceec64[m
+Author: Sophie Bots <s.h.bots@uu.nl>
+Date:   Thu Nov 25 15:53:22 2021 +0100
+
+    Some small edits to increase readibility and add flags to parts that do not yet work
+
+[33mcommit b672bb61944f5109838ff9aefeaadbb7106048a3[m
+Author: Sophie Bots <s.h.bots@uu.nl>
+Date:   Thu Nov 25 15:39:52 2021 +0100
+
+    Updates to fit code to new output structure with sex and age strata
+
+[33mcommit 5bd9c9cad347b92ed552e448684cf2278a65da38[m
+Author: Sophie Bots <s.h.bots@uu.nl>
+Date:   Wed Nov 24 15:00:57 2021 +0100
+
+    Adjusted code to step_12_2 output
+
+[33mcommit 4c905435f4061384f304dc70ef1327387647d0bd[m
+Author: Sophie Bots <s.h.bots@uu.nl>
+Date:   Fri Nov 12 12:57:31 2021 +0100
+
+    final small changes for reproducible code project
+
+[33mcommit 172acb1a456680e46f6671ec9a610d3ddb282891[m
+Author: shuu-26 <92516051+shuu-26@users.noreply.github.com>
+Date:   Fri Nov 12 11:33:03 2021 +0100
+
+    formatting changes
+
+[33mcommit 0704a12b252bc052191c784737e041550e41b34e[m
+Author: shuu-26 <92516051+shuu-26@users.noreply.github.com>
+Date:   Fri Nov 12 11:31:28 2021 +0100
+
+    Added R and package version information to ReadMe
+
+[33mcommit bb9d282b267ac3e25674c66c503e00dab8560e6a[m
+Author: shuu-26 <92516051+shuu-26@users.noreply.github.com>
+Date:   Fri Nov 12 10:40:45 2021 +0100
+
+    Deleted .Rhistory file
+
+[33mcommit 14f86ff98cb76f7b90444369f52ac79d7abc1e54[m
+Author: Sophie Bots <s.h.bots@uu.nl>
+Date:   Fri Nov 12 10:36:54 2021 +0100
+
+    Added project information to ReadMe files
+
+[33mcommit db70bb7cc242f01347813f1300601c7ba8aa24d0[m
+Author: Sophie Bots <s.h.bots@uu.nl>
+Date:   Fri Nov 12 10:24:18 2021 +0100
+
+    Created meaningful comments and added docstring documentation to function
+
+[33mcommit eab419b6fd165e1a3bf2fe574a99c2df1bf9e4b5[m
+Author: Sophie Bots <s.h.bots@uu.nl>
+Date:   Thu Nov 11 13:36:02 2021 +0100
+
+    Added error messages and created for-loop for reading in data
+
+[33mcommit 45461e6af5af15fa45051609c97318cbfd438699[m
+Author: Sophie Bots <s.h.bots@uu.nl>
+Date:   Thu Nov 11 12:12:37 2021 +0100
+
+    Stylistic changes based on lintr feedback
+
+[33mcommit 8ae3aad1c8ef69330beeefb9c713dd442b445f48[m
+Author: Sophie Bots <s.h.bots@uu.nl>
+Date:   Thu Nov 11 11:48:36 2021 +0100
+
+    Small changes to R file
+
+[33mcommit bba402ce1e160c2ae7b557beb511fa3e477f867b[m
+Author: Sophie Bots <s.h.bots@uu.nl>
+Date:   Thu Nov 11 10:57:21 2021 +0100
+
+    First commit
